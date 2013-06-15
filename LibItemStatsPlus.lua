@@ -102,16 +102,19 @@ local function GetStatIndex(statName)
 end
 
 local Locale = GetLocale()
+do
+	if (Locale=="enUS" or Locale=="zhCN" or Locale=="zhTW" or Locale=="koKR") then
+		LOCALE_STHOUSAND = "," --Character used to separate groups of digits
+		LOCALE_SDECIMAL = "." --Character(s) used for the decimal separator
+	elseif (Locale=="deDE" or Locale=="esES" or Locale=="frFR" or Locale=="itIT" or Locale=="ruRU") then
+		LOCALE_STHOUSAND = "."
+		LOCALE_SDECIMAL = ","
+	elseif (Locale=="ptBR") then
+		LOCALE_STHOUSAND = "%p"
+		LOCALE_SDECIMAL = "%p"
+	else
 
-if Locale=="enUS" or Locale=="zhCN" or Locale=="zhTW" or Locale=="koKR" then
-	local LOCALE_STHOUSAND = ","; --Character used to separate groups of digits
-	local LOCALE_SDECIMAL = "."; --Character(s) used for the decimal separator
-elseif Locale=="deDE" or Locale=="esES" or Locale=="frFR" or Locale=="itIT" or Locale=="ruRU" then
-	local LOCALE_STHOUSAND = ".";
-	local LOCALE_SDECIMAL = ",";
-elseif Locale=="ptBR" then
-	local LOCALE_STHOUSAND = "%p";
-	local LOCALE_SDECIMAL = "%p";
+	end
 end
 
 local patDecimal = "%d-[%"..LOCALE_STHOUSAND.."?%d]+%"..LOCALE_SDECIMAL.."?%d*"; --regex to find a localized decimal number e.g. 
