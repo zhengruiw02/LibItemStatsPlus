@@ -2,20 +2,22 @@
 	Method:
 	stats = lib:GetItemStats(itemlink);
 	Returns: A table of item stats, as returns from API GetItemStats(itemlink).
-	Including item's enchant, gems, reforged stats by scanning item's tooltip BUT EXCLUDING GEM STOCKEY.
+	Including item's enchant, gems, reforged stats by scanning item's tooltip BUT EXCLUDING GEMS SCOKET.
 	
 	===Additional Func===
 	
 	ilevel = lib:GetUpgradeLevel(itemlink)
 	Returns: upgraded itemlevel of itemlink
-	
+	------
 	ratings = lib:GetRatingsFromStat(value, level, statName [, classid, specid] )
 	Returns: Rating of statName from level in level
 		-- TODO: add formula for resilience with DR in other levels
-		-- TODO: handle different class and spec in mastery rather than lookup in db
-	
+	------
 	MeleeCritRating = lib:GetCritFromAgi(value, level, classid)
 	SpellCritRating = lib:GetCritFromInt(value, level, classid)
+	
+	SpellCritBase = lib:GetSpellCritBase(classid)
+	MeleeCritBase = lib:GetMeleeCritBase(classid)
 	
 	value = lib:GetAPFromAgi(value, classid)
 	value = lib:GetAPFromStr(value, classid)
@@ -23,8 +25,7 @@
 	value = lib:GetMPFromSpt(value, classid)
 	value = lib:GetHPFromSta(value, level)
 	
-	Struct for every gears stats
-	
+	Struct for each gear stats table:
 	stats = {	[statName1] = value,
 				[statName2] = value,
 				... 
@@ -32,7 +33,7 @@
 ]]
 local _, ns = ...
 local MAJOR = "LibItemStatsPlus";
-local MINOR = "$Revision: 5 $";
+local MINOR = "$Revision: 6 $";
 local debugmode = false
 
 local lib = LibStub:NewLibrary(MAJOR, MINOR);
@@ -47,7 +48,8 @@ local CombatRatingsFromRatingIDToIndex = ns.CombatRatingsFromRatingIDToIndex
 local CombatRatings = ns.CombatRatings
 --local CombatRating10 = ns.CombatRating10
 --local CombatRating60 = ns.CombatRating60
-local CritBase = ns.CritBase
+local SpellCritBase = ns.SpellCritBase
+local MeleeCritBase = ns.MeleeCritBase
 local APPerStr = ns.APPerStr
 local RAPPerAgi = ns.RAPPerAgi
 local APPerAgi = ns.APPerAgi
@@ -113,7 +115,9 @@ do
 		LOCALE_STHOUSAND = "%p"
 		LOCALE_SDECIMAL = "%p"
 	else
-
+		print("unknow locale")
+		LOCALE_STHOUSAND = "%p"
+		LOCALE_SDECIMAL = "%p"
 	end
 end
 
@@ -181,6 +185,7 @@ function ParseLine(stats, text, r, g, b)
 					AddStats(stats, "ITEM_MOD_AGILITY_SHORT", value)
 					AddStats(stats, "ITEM_MOD_INTELLECT_SHORT", value)
 					AddStats(stats, "ITEM_MOD_STRENGTH_SHORT", value)
+					AddStats(stats, "ITEM_MOD_SPIRIT_SHORT", value)
 				else
 					AddStats(stats, statName, value)
 				end
@@ -241,6 +246,7 @@ function lib:GetRatingsFromStat(value, level, statName, classid, specid)
 	local statIndex, ratings
 	statIndex = GetStatIndex(statName)
 	if statIndex == nil or statIndex == 0 or type(value) ~= "number" then return 0 end
+	if not (level <= MAX_PLAYER_LEVEL) then return 0 end
 	--[[if ( level <= 60 ) and ( statIndex ~= 9 ) then
 		if level < 10 then 
 			ratings = value / CombatRating10[statIndex]
@@ -264,7 +270,6 @@ function lib:GetRatingsFromStat(value, level, statName, classid, specid)
 		-- ratings = 100 - 100 * 0.99 ^ ( value / 310 )
 		ratings = 35 * ( value / ( value + 23187 ) )
 	elseif ( statIndex == 9 ) then 
-		-- TODO: handle different class and spec in mastery rather than lookup in db
 		classid = CheckClassID(classid)
 		if specid > 4 then
 			specid = specid - SpecIDToSpecIndex[classid]
@@ -277,58 +282,70 @@ function lib:GetRatingsFromStat(value, level, statName, classid, specid)
 	return ratings
 end
 
+function lib:GetSpellCritBase(classid)
+	classid = CheckClassID(classid)
+	if not (classid <= MAX_CLASSES) then return 0 end
+	return SpellCritBase[classid]
+end
+
+function lib:GetMeleeCritBase(classid)
+	classid = CheckClassID(classid)
+	if not (classid <= MAX_CLASSES) then return 0 end
+	return MeleeCritBase[classid]
+end
+
 function lib:GetCritFromAgi(value, level, classid)
 	if type(level) ~= "number" or type(value) ~= "number" then return 0 end
 	classid = CheckClassID(classid)
-	if level <= MAX_PLAYER_LEVEL and classid <= MAX_CLASSES then
-		return value / MeleeCritRatings[level][classid]
-	end
+	if not (level <= MAX_PLAYER_LEVEL) or not (classid <= MAX_CLASSES) then return 0 end
+	return value / MeleeCritRatings[level][classid]
 end
 
 function lib:GetCritFromInt(value, level, classid)
 	if type(level) ~= "number" or type(value) ~= "number" then return 0 end
 	classid = CheckClassID(classid)
-	if not classid then return 0 end
+	if not (level <= MAX_PLAYER_LEVEL) or not (classid <= MAX_CLASSES) then return 0 end
 	return value / SpellCritRatings[level][classid]
 end
 
 function lib:GetAPFromAgi(value, classid)
 	if type(value) ~= "number" then return 0 end
 	classid = CheckClassID(classid)
-	if not classid then return 0 end
+	if not (classid <= MAX_CLASSES) then return 0 end
 	return value * APPerAgi[classid]
 end
 
 function lib:GetAPFromStr(value, classid)
 	if type(value) ~= "number" then return 0 end
 	classid = CheckClassID(classid)
-	if not classid then return 0 end
+	if not (classid <= MAX_CLASSES) then return 0 end
 	return value * APPerStr[classid]
 end
 
 function lib:GetRAPFromAgi(value, classid)
 	if type(value) ~= "number" then return 0 end
 	classid = CheckClassID(classid)
-	if not classid then return 0 end
+	if not (classid <= MAX_CLASSES) then return 0 end
 	return value * RAPPerAgi[classid]
 end
 
 function lib:GetSPFromInt(value, classid)
 	if type(value) ~= "number" then return 0 end
 	classid = CheckClassID(classid)
-	if not classid then return 0 end
+	if not (classid <= MAX_CLASSES) then return 0 end
 	return value * SPPerInt[classid]
 end
 
 function lib:GetMPFromSpt(value, classid)
 	if type(value) ~= "number" then return 0 end
 	classid = CheckClassID(classid)
-	if not classid then return 0 end
+	if not (classid <= MAX_CLASSES) then return 0 end
 	return value * MPPerSpt[classid]
 end
 
 function lib:GetHPFromSta(value, level)
 	if type(level) ~= "number" or type(value) ~= "number" then return 0 end
+	if not (level <= MAX_PLAYER_LEVEL) then return 0 end
 	return value * HpPerSta[level]
 end
 
