@@ -8,7 +8,10 @@
 ## X-Category: Library
 ## X-License: GNU General Public License version 3 (GPLv3)
 ## X-GitCafe: https://gitcafe.com/zhengruiw02/LibItemStatsPlus
-## X-GitHub: https://github.com/zhengruiw02/LibItemStatsPlus.git
+## X-Curse-Packaged-Version: r6
+## X-Curse-Project-Name: ItemStatsPlus
+## X-Curse-Project-ID: libitemstatsplus
+## X-Curse-Repository-ID: wow/libitemstatsplus/mainline
 ## OptionalDeps: LibStub
 
 lib.xml
