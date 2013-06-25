@@ -4,3 +4,4 @@ externals:
         tag: latest
 ignore:
     - LibStub
+enable-nolib-creation: no
