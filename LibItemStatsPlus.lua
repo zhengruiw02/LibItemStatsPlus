@@ -16,8 +16,8 @@
 	MeleeCritRating = lib:GetCritFromAgi(value, level, classid)
 	SpellCritRating = lib:GetCritFromInt(value, level, classid)
 	
-	SpellCritBase = lib:GetSpellCritBase(classid)
-	MeleeCritBase = lib:GetMeleeCritBase(classid)
+	lib.SpellCritBase = lib:GetSpellCritBase(classid)
+	lib.MeleeCritBase = lib:GetMeleeCritBase(classid)
 	
 	value = lib:GetAPFromAgi(value, classid)
 	value = lib:GetAPFromStr(value, classid)
@@ -31,39 +31,14 @@
 				... 
 			}
 ]]
-local _, ns = ...
-local MAJOR = "LibItemStatsPlus";
-local MINOR = "$Revision: 6 $";
+local MAJOR, MINOR = "LibItemStatsPlus",7;
 local debugmode = false
 
+if not LibStub then error(MAJOR.." requires LibStub") end
 local lib = LibStub:NewLibrary(MAJOR, MINOR);
 if not lib then return end
 
 SLASH_LIBITEMSTATSPLUS1 = "/LISP";
-
-local GetClassIDFromClassName = ns.GetClassIDFromClassName 
-local CombatRatingsFromIndexToName = ns.CombatRatingsFromIndexToName
-local CombatRatingsFromNameToIndex = ns.CombatRatingsFromNameToIndex
-local CombatRatingsFromRatingIDToIndex = ns.CombatRatingsFromRatingIDToIndex
-local CombatRatings = ns.CombatRatings
---local CombatRating10 = ns.CombatRating10
---local CombatRating60 = ns.CombatRating60
-local SpellCritBase = ns.SpellCritBase
-local MeleeCritBase = ns.MeleeCritBase
-local APPerStr = ns.APPerStr
-local RAPPerAgi = ns.RAPPerAgi
-local APPerAgi = ns.APPerAgi
-local SPPerInt = ns.SPPerInt
-local MPFromSpt = ns.MPFromSpt
-local HpPerSta = ns.HpPerSta
-local MasteryCoefficients = ns.MasteryCoefficients
-local SpecIDToSpecIndex = ns.SpecIDToSpecIndex
-local MeleeCritRatings = ns.MeleeCritRatings
-local SpellCritRatings = ns.SpellCritRatings
-local UpgradeLevels = ns.UpgradeLevels
-local UpgradeLevels = ns.UpgradeLevels
-local StatsList = ns.StatsList
-local StatsListEquip = ns.StatsListEquip
 
 local cache = {}
 setmetatable(cache, {__mode = "kv"}) -- weak table to enable garbage collection
@@ -89,7 +64,7 @@ elseif not _G[MAJOR.."TooltipTextLeft40"] then
 end
 
 local function CheckClassID(classid)
-	if type(classid) ~= "number" then classid = GetClassIDFromClassName[classid] end
+	if type(classid) ~= "number" then classid = lib.GetClassIDFromClassName [classid] end
 	if not classid then
 		return
 	else
@@ -98,8 +73,8 @@ local function CheckClassID(classid)
 end
 
 local function GetStatIndex(statName)
-	statIndex = CombatRatingsFromNameToIndex[statName]
-	if statIndex == nil then statIndex = CombatRatingsFromRatingIDToIndex[statName] end
+	statIndex = lib.CombatRatingsFromNameToIndex[statName] or nil
+	if statIndex == nil then statIndex = lib.CombatRatingsFromRatingIDToIndex[statName] end
 	return statIndex
 end
 
@@ -128,7 +103,7 @@ local Whitecolor ={1, 1, 1}
 local Greedcolor ={0, 1, 0}
 local Yellocolor ={1, 210/255, 0}]]
 
-function AddStats(stats, statName, value)
+local function AddStats(stats, statName, value)
 	value = string.gsub( value , LOCALE_STHOUSAND , "" )
 	value = tonumber(value)
 	if stats[statName] == nil then
@@ -162,7 +137,7 @@ function ParseLine(stats, text, r, g, b)
 	--dual stats
 	local found, _, value1, statNameStr1, value2, statNameStr2 = string.find(text, ".-%+("..patDecimal..")(.-)%+("..patDecimal..")(.*)");
 	if found then
-		for statName, statNameText in pairs(StatsList) do
+		for statName, statNameText in pairs(lib.StatsList) do
 			if string.find(string.upper(statNameStr1), "^%s*"..string.upper(statNameText)) then
 				AddStats(stats, statName, value1)
 			end
@@ -177,7 +152,7 @@ function ParseLine(stats, text, r, g, b)
 	--single stats
 	local found, _, value, statNameStr = string.find(text, ".-%+?("..patDecimal..")(.*)");
 	if found then
-		for statName, statNameText in pairs(StatsList) do
+		for statName, statNameText in pairs(lib.StatsList) do
 			found = string.find(string.upper(statNameStr), "^%s*"..string.upper(statNameText));
 			if found then
 				if statName=="SPELL_STATALL" then
@@ -197,12 +172,14 @@ function ParseLine(stats, text, r, g, b)
 	--"Equip:"
 	local found = string.find(text, ITEM_SPELL_TRIGGER_ONEQUIP);
 	if found then
-		for statName, statNameText in pairs(StatsListEquip) do
-			statNameText = gsub(statNameText, "%%s", "("..patDecimal..")")
-			found, _, value = string.find(text, statNameText);
+		for statName, statNameText in pairs(lib.StatsList) do
+			found = string.find(string.upper(text), string.upper(statNameText));
 			if found then
-				AddStats(stats, statName, value)
-				return stats
+				found, _, value = string.find(text, "("..patDecimal..")");
+				if found then
+					AddStats(stats, statName, value)
+					return stats
+				end
 			end
 		end
 	end
@@ -257,10 +234,10 @@ function lib:GetRatingsFromStat(value, level, statName, classid, specid)
 	elseif ( level <= 60 ) and ( level >= 10 ) then
 		classid = CheckClassID(classid)
 		if specid > 4 then
-			specid = specid - SpecIDToSpecIndex[classid]
+			specid = specid - lib.SpecIDToSpecIndex[classid]
 		end
-		if not MasteryCoefficients[classid][specid] then return 0 end
-		ratings = value / ( level * CombatRating60[statIndex][1] + CombatRating60[statIndex][2] ) * MasteryCoefficients[classid][specid]
+		if not lib.MasteryCoefficients[classid][specid] then return 0 end
+		ratings = value / ( level * CombatRating60[statIndex][1] + CombatRating60[statIndex][2] ) * lib.MasteryCoefficients[classid][specid]
 		return ratings
 	end]]
 	if ( statIndex == 6 ) and  ( level == 90 ) then
@@ -272,12 +249,12 @@ function lib:GetRatingsFromStat(value, level, statName, classid, specid)
 	elseif ( statIndex == 9 ) then 
 		classid = CheckClassID(classid)
 		if specid > 4 then
-			specid = specid - SpecIDToSpecIndex[classid]
+			specid = specid - lib.SpecIDToSpecIndex[classid]
 		end
-		if not MasteryCoefficients[classid][specid] then return 0 end
-		ratings = value / CombatRatings[level][statIndex] * MasteryCoefficients[classid][specid]
+		if not lib.MasteryCoefficients[classid][specid] then return 0 end
+		ratings = value / lib.CombatRatings[level][statIndex] * lib.MasteryCoefficients[classid][specid]
 	else
-		ratings = value / CombatRatings[level][statIndex]
+		ratings = value / lib.CombatRatings[level][statIndex]
 	end
 	return ratings
 end
@@ -285,55 +262,55 @@ end
 function lib:GetSpellCritBase(classid)
 	classid = CheckClassID(classid)
 	if not (classid <= MAX_CLASSES) then return 0 end
-	return SpellCritBase[classid]
+	return lib.SpellCritBase[classid]
 end
 
 function lib:GetMeleeCritBase(classid)
 	classid = CheckClassID(classid)
 	if not (classid <= MAX_CLASSES) then return 0 end
-	return MeleeCritBase[classid]
+	return lib.MeleeCritBase[classid]
 end
 
 function lib:GetCritFromAgi(value, level, classid)
 	if type(level) ~= "number" or type(value) ~= "number" then return 0 end
 	classid = CheckClassID(classid)
 	if not (level <= MAX_PLAYER_LEVEL) or not (classid <= MAX_CLASSES) then return 0 end
-	return value / MeleeCritRatings[level][classid]
+	return value / lib.MeleeCritRatings[level][classid]
 end
 
 function lib:GetCritFromInt(value, level, classid)
 	if type(level) ~= "number" or type(value) ~= "number" then return 0 end
 	classid = CheckClassID(classid)
 	if not (level <= MAX_PLAYER_LEVEL) or not (classid <= MAX_CLASSES) then return 0 end
-	return value / SpellCritRatings[level][classid]
+	return value / lib.SpellCritRatings[level][classid]
 end
 
 function lib:GetAPFromAgi(value, classid)
 	if type(value) ~= "number" then return 0 end
 	classid = CheckClassID(classid)
 	if not (classid <= MAX_CLASSES) then return 0 end
-	return value * APPerAgi[classid]
+	return value * lib.APPerAgi[classid]
 end
 
 function lib:GetAPFromStr(value, classid)
 	if type(value) ~= "number" then return 0 end
 	classid = CheckClassID(classid)
 	if not (classid <= MAX_CLASSES) then return 0 end
-	return value * APPerStr[classid]
+	return value * lib.APPerStr[classid]
 end
 
 function lib:GetRAPFromAgi(value, classid)
 	if type(value) ~= "number" then return 0 end
 	classid = CheckClassID(classid)
 	if not (classid <= MAX_CLASSES) then return 0 end
-	return value * RAPPerAgi[classid]
+	return value * lib.RAPPerAgi[classid]
 end
 
 function lib:GetSPFromInt(value, classid)
 	if type(value) ~= "number" then return 0 end
 	classid = CheckClassID(classid)
 	if not (classid <= MAX_CLASSES) then return 0 end
-	return value * SPPerInt[classid]
+	return value * lib.SPPerInt[classid]
 end
 
 function lib:GetMPFromSpt(value, classid)
@@ -346,7 +323,7 @@ end
 function lib:GetHPFromSta(value, level)
 	if type(level) ~= "number" or type(value) ~= "number" then return 0 end
 	if not (level <= MAX_PLAYER_LEVEL) then return 0 end
-	return value * HpPerSta[level]
+	return value * lib.HpPerSta[level]
 end
 
 function lib:GetUpgradeLevel(link)
@@ -354,7 +331,7 @@ function lib:GetUpgradeLevel(link)
 	local upgrade = link:match(":(%d+)\124h%[")
 	local itemLevel = select(4, GetItemInfo(link)) 
 	if itemLevel ~= nil then
-		itemLevel = itemLevel + (UpgradeLevels[upgrade] or 0)
+		itemLevel = itemLevel + (lib.UpgradeLevels[upgrade] or 0)
 		return itemLevel
 	end
 end

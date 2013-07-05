@@ -1,5 +1,5 @@
-local _, ns = ...
-ns.SpellCritBase = {
+local lib = LibStub:GetLibrary("LibItemStatsPlus")
+lib.SpellCritBase = {
 --classid,spellcrit
 	[1] = 0,
 	[2] = 0.033399999,
@@ -14,7 +14,7 @@ ns.SpellCritBase = {
 	[11] = 0.0185,
 }
 
-ns.MeleeCritBase = {
+lib.MeleeCritBase = {
 --classid,meleecrit
 	[1] = 0.050000001,
 	[2] = 0.050000001,
