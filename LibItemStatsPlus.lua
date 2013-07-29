@@ -31,7 +31,7 @@
 				... 
 			}
 ]]
-local MAJOR, MINOR = "LibItemStatsPlus",7;
+local MAJOR, MINOR = "LibItemStatsPlus",10;
 local debugmode = false
 
 if not LibStub then error(MAJOR.." requires LibStub") end
