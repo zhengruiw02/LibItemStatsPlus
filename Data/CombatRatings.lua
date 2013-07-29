@@ -26,7 +26,7 @@ lib.CombatRatingsFromNameToIndex = {
 
 lib.CombatRatingsFromRatingIDToIndex = {
 	["CR_WEAPON_SKILL"] = 0,
-	["CR_DEFElibE_SKILL"] = 0,
+	["CR_DEFENSE_SKILL"] = 0,
 	["CR_DODGE"] = 1,
 	["CR_PARRY"] = 2,
 	["CR_BLOCK"] = 3,

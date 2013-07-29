@@ -169,17 +169,16 @@ function ParseLine(stats, text, r, g, b)
 		end
 	end
 	
-	--"Equip:"
+	--"Equip:" resilience
 	local found = string.find(text, ITEM_SPELL_TRIGGER_ONEQUIP);
 	if found then
-		for statName, statNameText in pairs(lib.StatsList) do
-			found = string.find(string.upper(text), string.upper(statNameText));
+		local statName, statNameText = "RESISTANCE0_NAME" , RESISTANCE0_NAME
+		found = string.find(string.upper(text), string.upper(statNameText));
+		if found then
+			found, _, value = string.find(text, "("..patDecimal..")");
 			if found then
-				found, _, value = string.find(text, "("..patDecimal..")");
-				if found then
-					AddStats(stats, statName, value)
-					return stats
-				end
+				AddStats(stats, statName, value)
+				return stats
 			end
 		end
 	end
@@ -317,7 +316,7 @@ function lib:GetMPFromSpt(value, classid)
 	if type(value) ~= "number" then return 0 end
 	classid = CheckClassID(classid)
 	if not (classid <= MAX_CLASSES) then return 0 end
-	return value * MPPerSpt[classid]
+	return value * lib.MPPerSpt[classid]
 end
 
 function lib:GetHPFromSta(value, level)
