@@ -150,7 +150,7 @@ function ParseLine(stats, text, r, g, b)
 	end
 
 	--single stats
-	local found, _, value, statNameStr = string.find(text, ".-%+?("..patDecimal..")(.*)");
+	local found, _, value, statNameStr = string.find(text, ".-%+("..patDecimal..")(.*)");
 	if found then
 		for statName, statNameText in pairs(lib.StatsList) do
 			found = string.find(string.upper(statNameStr), "^%s*"..string.upper(statNameText));
@@ -169,10 +169,10 @@ function ParseLine(stats, text, r, g, b)
 		end
 	end
 	
-	--"Equip:" resilience
+	--"Equip:" pvp power for weapon
 	local found = string.find(text, ITEM_SPELL_TRIGGER_ONEQUIP);
 	if found then
-		local statName, statNameText = "RESISTANCE0_NAME" , RESISTANCE0_NAME
+		local statName, statNameText = "ITEM_MOD_PVP_POWER_SHORT" , ITEM_MOD_PVP_POWER_SHORT
 		found = string.find(string.upper(text), string.upper(statNameText));
 		if found then
 			found, _, value = string.find(text, "("..patDecimal..")");
